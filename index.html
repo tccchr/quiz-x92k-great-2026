@@ -522,12 +522,127 @@
     const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFxb2ZvdXhrbGRkdnN4ZWR4emVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQwNTgxMDksImV4cCI6MjA3OTYzNDEwOX0.TeibzwkO3pDb7RBfTgdHA5Cy2x8NagBFirrO9_53s74';
     const ADM_CODE = "admin1234";
     const RATES = { 'HO': 53.58, 'PPD': 100.00, 'NKL': 59.39 };
-    const MOCK = [{id:99, question:"Mock Q?", option_1:"A", option_2:"B", option_3:"C", option_4:"D", answer:"1", is_active:true}];
-
-    const sb = window.supabase.createClient(SB_URL, SB_KEY);
-    let st = { u: null, e: [], q: [], l: [], p: [], s: 0, t: null, tab: 'emp', lastId: null, isPeak: false, canPlay: false, timeOffset: 0 };
     
+    const sb = window.supabase.createClient(SB_URL, SB_KEY);
+    // st object สำหรับเก็บสถานะ (เพิ่ม qStartTime เพื่อดักความเร็ว)
+    let st = { u: null, e: [], q: [], l: [], p: [], s: 0, t: null, tab: 'emp', lastId: null, isPeak: false, canPlay: false, timeOffset: 0, qStartTime: 0 };
     let quizInterval = null;
+
+    // --- 🛡️ ANTI-CHEAT: SPEED TRAP ---
+    function checkCheating(timeTaken) {
+        // ถ้าตอบเร็วกว่า 0.7 วินาที (700ms) ให้ถือว่าใช้ Script หรือ Bookmarklet
+        if (timeTaken < 700) {
+            alert("อย่าโกงงงงงงงงงงงงงง");
+            return true;
+        }
+        return false;
+    }
+
+    // ฟังก์ชันช่วยจัดการ UI อื่นๆ (คงเดิม)
+    function fmt(n) { return n.toLocaleString(); } 
+    function nav(id) {
+        document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+    function load(b) { document.getElementById('loading').style.display = b?'flex':'none'; }
+    function shuffle(array) {
+        let currentIndex = array.length, randomIndex;
+        while (currentIndex != 0) {
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--;
+            [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+        }
+        return array;
+    }
+
+    // --- ปรับปรุงฟังก์ชัน loadQ เพื่อเริ่มนับเวลา ---
+    function loadQ(lst) {
+        const tBar = document.getElementById('tBar');
+        const panic = document.getElementById('panicOverlay');
+        const countBox = document.getElementById('bigCountdown');
+
+        tBar.style.width = '100%';
+        tBar.style.background = '#2563eb';
+        panic.classList.remove('active');
+        countBox.classList.remove('urgent');
+        countBox.innerText = "8.0";
+
+        clearInterval(quizInterval);
+        document.getElementById('streak').innerText = st.s;
+        
+        let available = lst;
+        if (lst.length > 1 && st.lastId) {
+            available = lst.filter(q => q.id !== st.lastId);
+        }
+        
+        st.curQ = available[Math.floor(Math.random()*available.length)];
+        st.lastId = st.curQ.id; 
+        
+        // 🏁 บันทึกเวลาที่เริ่มโชว์คำถาม
+        st.qStartTime = Date.now(); 
+
+        const basePt = Math.min((st.s+1)*10, 50);
+        const finalPt = st.isPeak ? basePt * 2 : basePt;
+
+        document.getElementById('qArea').innerHTML = `
+            <div style="text-align:center;">
+                <div class="q-txt">${st.curQ.question}</div>
+                <div style="color:var(--primary); font-weight:bold; margin-bottom:20px; font-size:14px;">WIN: +${finalPt} ${st.isPeak?'(x2)':''}</div>
+            </div>
+            <div class="choice-grid">
+                ${shuffle([1,2,3,4]).map(i => `<button class="choice-btn" onclick="ans('${i}',this)">${st.curQ['option_'+i]}</button>`).join('')}
+            </div>
+        `;
+
+        let timeLeft = 8.0;
+        quizInterval = setInterval(() => {
+            timeLeft -= 0.1;
+            const pct = (timeLeft / 8.0) * 100;
+            tBar.style.width = pct + '%';
+            countBox.innerText = Math.max(0, timeLeft).toFixed(1);
+            if(timeLeft <= 3.0) {
+                tBar.style.background = '#ef4444';
+                panic.classList.add('active');
+                countBox.classList.add('urgent');
+            }
+            if(timeLeft <= 0) {
+                clearInterval(quizInterval);
+                endQ(false);
+            }
+        }, 100);
+    }
+
+    // --- ปรับปรุงฟังก์ชัน ans เพื่อตรวจจับการโกง ---
+    async function ans(v,btn) {
+        // 🕒 คำนวณเวลาที่ใช้ไปนับตั้งแต่โชว์คำถาม
+        const timeTaken = Date.now() - st.qStartTime;
+
+        // 🚨 ตรวจสอบบอท
+        if (checkCheating(timeTaken)) {
+            exitQuiz(); // เด้งออกไปหน้าหลักทันที
+            return;
+        }
+
+        clearInterval(quizInterval);
+        document.getElementById('panicOverlay').classList.remove('active');
+        document.querySelectorAll('.choice-btn').forEach(b=>b.disabled=true);
+        
+        if(v===st.curQ.answer) {
+            btn.classList.add('correct');
+            const basePt = Math.min((st.s+1)*10, 50);
+            const pt = st.isPeak ? basePt * 2 : basePt;
+            st.s++;
+            const pp = document.getElementById('scoreEff'); pp.innerText="+"+pt; pp.style.display='block';
+            setTimeout(()=>pp.style.display='none',800);
+            await sb.from('logs').insert([{employee_id:st.u.employee_id, question_id:st.curQ.id, point:pt}]);
+            fetchD(); 
+            setTimeout(()=>loadQ(st.q.filter(q=>q.is_active!==false)),1000);
+        } else {
+            btn.classList.add('incorrect');
+            await sb.from('logs').insert([{employee_id:st.u.employee_id, question_id:st.curQ.id, point:0}]);
+            setTimeout(()=>endQ(true),1000);
+        }
+    }
 
     function fmt(n) { return n.toLocaleString(); } 
 
