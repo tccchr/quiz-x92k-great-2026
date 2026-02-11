@@ -3,32 +3,30 @@
  <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>GREAT Learning | sReal-time Ranking</title>
+  <title>GREAT Learning | Game Show Edition</title>
+  
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
   <style>
     /* =========================================
-       🎨 THEME: EDITORIAL DASHBOARD (The Standard Style)
+       🎬 THEME: CINEMATIC GAME SHOW & NETFLIX STYLE
        ========================================= */
     :root {
-        --primary: #2563eb;       /* Royal Blue */
-        --primary-dark: #1e3a8a;
-        --accent: #06b6d4;        /* Cyan */
-        --danger: #ef4444;
-        --success: #10b981;
-        --warning: #f59e0b;
+        --primary: #3b82f6;       /* Neon Blue */
+        --accent: #06b6d4;        /* Cyan Glow */
+        --danger: #ef4444;        /* Netflix Red */
+        --gold: #fbbf24;          /* Winner Gold */
         
-        --bg-body: #f1f5f9;       /* Slate 100 */
-        --bg-card: #ffffff;
-        --text-main: #0f172a;     /* Slate 900 */
-        --text-sub: #64748b;      /* Slate 500 */
+        --bg-body: #0f172a;       /* Deep Space Blue */
+        --bg-glass: rgba(30, 41, 59, 0.6); /* Glass Card */
+        --text-main: #f8fafc;     
+        --text-sub: #94a3b8;      
         
-        --radius: 8px;            /* Sharper corners */
-        --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-        --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -1px rgb(0 0 0 / 0.06);
-        --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05);
+        --radius: 12px;
+        --glow-primary: 0 0 20px rgba(59, 130, 246, 0.5);
+        --glow-gold: 0 0 25px rgba(251, 191, 36, 0.4);
     }
 
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
@@ -36,11 +34,26 @@
     body { 
         margin: 0; padding: 0; 
         font-family: 'Kanit', sans-serif; 
-        background-color: var(--bg-body);
+        background: radial-gradient(circle at top, #1e293b 0%, #020617 100%);
         color: var(--text-main);
         height: 100vh; overflow: hidden;
         font-size: 16px;
-        line-height: 1.5;
+    }
+
+    /* --- ANIMATIONS --- */
+    @keyframes slideUpFade {
+        from { opacity: 0; transform: translateY(40px) scale(0.95); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes pulseGlow {
+        0% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.4); }
+        70% { box-shadow: 0 0 0 10px rgba(6, 182, 212, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); }
+    }
+    @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-5px); }
+        100% { transform: translateY(0px); }
     }
 
     /* Layout Containers */
@@ -48,472 +61,429 @@
         width: 100%; height: 100%; position: fixed; top: 0; left: 0;
         display: none; flex-direction: column; 
         overflow-y: auto; overflow-x: hidden;
-        z-index: 1; opacity: 0; transition: opacity 0.2s ease-in-out;
-        background: var(--bg-body);
+        z-index: 1; opacity: 0; transition: opacity 0.3s ease;
+        background: transparent;
     }
     .page-container.active { display: flex !important; opacity: 1; z-index: 100; }
 
-    .main-wrapper {
-        max-width: 1200px;
-        margin: 0 auto;
-        width: 100%;
-        padding: 0;
-        display: flex;
-        flex-direction: column;
-        flex: 1;
-    }
-
     /* Scrollbar */
-    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
 
-    /* --- 1. LOGIN (Modern Corporate) --- */
+    /* --- 1. LOGIN (Cinematic Entrance) --- */
     .login-wrap { 
         height: 100%; display: flex; flex-direction: column; 
         justify-content: center; align-items: center; padding: 20px;
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-        position: relative; overflow: hidden;
+        background: url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop') no-repeat center center/cover;
+        position: relative;
     }
-    /* Decor Circle */
-    .login-wrap::before {
-        content: ''; position: absolute; top: -10%; right: -10%;
-        width: 300px; height: 300px; background: var(--primary);
-        border-radius: 50%; filter: blur(80px); opacity: 0.4;
+    .login-overlay {
+        position: absolute; inset: 0;
+        background: linear-gradient(180deg, rgba(15,23,42,0.8) 0%, rgba(15,23,42,1) 90%);
+        backdrop-filter: blur(5px);
     }
     
     .login-card {
-        background: rgba(255,255,255,0.05); backdrop-filter: blur(10px);
-        border: 1px solid rgba(255,255,255,0.1); padding: 50px 40px; 
-        border-radius: 16px; width: 100%; max-width: 400px; text-align: center;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        z-index: 2;
+        position: relative; z-index: 2;
+        background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(20px);
+        border: 1px solid rgba(255,255,255,0.1); padding: 40px; 
+        border-radius: 20px; width: 100%; max-width: 400px; text-align: center;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+        animation: slideUpFade 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
-    .brand-logo { font-family: 'Outfit', sans-serif; font-size: 48px; font-weight: 900; color: white; letter-spacing: -1px; margin: 0; line-height: 1; }
-    .brand-sub { color: #94a3b8; margin-bottom: 40px; font-weight: 300; letter-spacing: 1px; font-size: 14px; text-transform: uppercase; }
-
+    .brand-logo { 
+        font-family: 'Outfit', sans-serif; font-size: 56px; font-weight: 900; 
+        background: linear-gradient(to right, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        margin: 0; line-height: 1; letter-spacing: -2px;
+    }
     .inp-modern {
-        width: 100%; padding: 18px; border-radius: var(--radius); 
-        border: 1px solid #334155;
-        background: #1e293b; color: white; font-size: 18px; text-align: center;
+        width: 100%; padding: 16px; border-radius: 50px; 
+        border: 1px solid rgba(255,255,255,0.2);
+        background: rgba(0,0,0,0.3); color: white; font-size: 18px; text-align: center;
         margin-bottom: 20px; font-family: 'Outfit', sans-serif; letter-spacing: 1px;
         transition: 0.3s;
     }
-    .inp-modern:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3); }
+    .inp-modern:focus { border-color: var(--accent); box-shadow: var(--glow-primary); background: rgba(0,0,0,0.6); }
     
     .btn-modern {
-        width: 100%; padding: 18px; border-radius: var(--radius); border: none;
-        background: var(--primary); color: white; font-size: 16px; font-weight: 600;
-        cursor: pointer; transition: 0.2s; text-transform: uppercase; letter-spacing: 1px;
+        width: 100%; padding: 16px; border-radius: 50px; border: none;
+        background: linear-gradient(45deg, var(--primary), var(--accent)); 
+        color: white; font-size: 16px; font-weight: 800;
+        cursor: pointer; transition: 0.3s; text-transform: uppercase; letter-spacing: 1px;
+        box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);
     }
-    .btn-modern:hover { background: var(--primary-dark); transform: translateY(-1px); }
+    .btn-modern:hover { transform: scale(1.05); box-shadow: 0 0 25px rgba(6, 182, 212, 0.6); }
 
-    /* --- 2. DASHBOARD (Editorial Style) --- */
+    /* --- 2. DASHBOARD (Netflix Style) --- */
     .top-bar {
-        background: #fff; border-bottom: 1px solid #e2e8f0;
+        background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(255,255,255,0.05);
         padding: 15px 24px; display: flex; justify-content: space-between; align-items: center;
-        position: sticky; top: 0; z-index: 50; box-shadow: var(--shadow-sm);
+        position: sticky; top: 0; z-index: 50;
     }
-    .app-brand { font-family: 'Outfit'; font-weight: 900; color: var(--text-main); font-size: 22px; letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px; }
-    .app-brand span { color: var(--primary); }
+    .app-brand span { color: var(--danger); }
     
     .user-pill { 
-        display: flex; align-items: center; gap: 12px; 
-        background: #f8fafc; padding: 6px 12px; border-radius: 50px; border: 1px solid #e2e8f0; 
-    }
-    .u-info { text-align: right; line-height: 1.2; }
-    .u-name { font-weight: 600; font-size: 14px; color: var(--text-main); }
-    .u-site { font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; }
-    .btn-logout {
-        background: #fee2e2; color: var(--danger); width: 32px; height: 32px; border-radius: 50%;
-        border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
-        transition: 0.2s;
-    }
-    .btn-logout:hover { background: var(--danger); color: white; }
-
-    .content { padding: 24px; padding-bottom: 140px; }
-    
-    /* Section Headers */
-    .h-title { 
-        font-size: 18px; font-weight: 700; color: var(--text-main); 
-        margin: 30px 0 15px 0; display: flex; align-items: center; gap: 10px;
-        position: relative;
-    }
-    .h-title::before { content:''; display:block; width:4px; height:24px; background:var(--primary); border-radius:2px;}
-
-    /* GRID LAYOUTS FOR RESPONSIVE */
-    .dashboard-grid {
-        display: grid; gap: 24px;
-        grid-template-columns: 1fr; /* Mobile default */
-    }
-    @media (min-width: 768px) {
-        .dashboard-grid { grid-template-columns: 2fr 1fr; } /* Desktop: Main | Sidebar */
-        .content { max-width: 1200px; margin: 0 auto; width: 100%; }
+        background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); 
+        padding: 5px 12px; border-radius: 50px; display: flex; align-items: center; gap: 10px;
     }
 
-    /* Card Styles */
-    .card { background: white; border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow-md); border: 1px solid #e2e8f0; }
-
-    /* My Stats - Hero Card */
-    .my-stats-card {
-        background: linear-gradient(to right, #1e293b, #0f172a); color: white;
-        display: flex; justify-content: space-between; align-items: center;
-        padding: 30px; position: relative; overflow: hidden;
-    }
-    .my-stats-card::after {
-        content: ''; position: absolute; right: -20px; bottom: -20px;
-        font-size: 150px; opacity: 0.05; font-family: 'Outfit'; font-weight:900;
-        content: '#1'; pointer-events: none;
-    }
-    .stat-group { text-align: left; }
-    .stat-label { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; font-weight: 600; margin-bottom: 5px; }
-    .stat-value { font-size: 42px; font-family: 'Outfit', sans-serif; font-weight: 700; line-height: 1; }
-    .stat-div { width: 1px; height: 50px; background: rgba(255,255,255,0.1); margin: 0 20px; }
-
-    /* Site Stats Grid */
-    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 10px; }
-    .site-box {
-        background: white; border: 1px solid #e2e8f0; border-radius: var(--radius);
-        padding: 15px; text-align: center; transition: 0.2s; position: relative;
+    /* Hero Section */
+    .hero-banner {
+        height: 380px; position: relative;
+        background-size: cover; background-position: center;
+        display: flex; align-items: flex-end;
+        padding: 30px; margin-bottom: 30px;
         overflow: hidden;
     }
-    .site-box.active { border-color: var(--primary); background: #eff6ff; }
-    .site-box.active .sb-val { color: var(--primary); }
-    .site-box::before { content:''; display:block; height: 4px; width: 100%; position: absolute; top:0; left:0; background: #e2e8f0; }
-    .site-box.active::before { background: var(--primary); }
+    .hero-banner::before {
+        content: ''; position: absolute; inset: 0;
+        background: linear-gradient(0deg, #0f172a 0%, rgba(15,23,42,0.4) 60%, rgba(15,23,42,0.8) 100%);
+    }
+    .hero-content { position: relative; z-index: 2; width: 100%; max-width: 1200px; margin: 0 auto; animation: slideUpFade 1s ease 0.2s backwards; }
     
-    .sb-lbl { font-size: 12px; font-weight: 600; color: var(--text-sub); margin-bottom: 5px; }
-    .sb-val { font-size: 24px; font-weight: 800; color: var(--text-main); font-family: 'Outfit'; }
+    .hero-rank-badge {
+        font-family: 'Outfit'; font-weight: 900; font-size: 80px; 
+        color: white; text-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        line-height: 1; margin-bottom: 10px; display: flex; align-items: baseline; gap: 10px;
+    }
+    .hero-sub { color: #cbd5e1; font-size: 16px; margin-bottom: 20px; font-weight: 300; letter-spacing: 1px; }
 
-    /* Podium (Bar Chart Style) */
-    .podium-wrap {
-        height: 220px; display: flex; align-items: flex-end; justify-content: center; gap: 15px;
-        padding-top: 20px; margin-bottom: 10px;
+    /* Row Layout */
+    .section-row { padding: 0 24px 40px 24px; max-width: 1200px; margin: 0 auto; }
+    .row-title {
+        font-size: 18px; color: white; margin-bottom: 15px; font-weight: 700;
+        display: flex; align-items: center; gap: 8px;
     }
-    .p-col { 
-        display: flex; flex-direction: column; align-items: center; justify-content: flex-end; 
-        flex: 1; height: 100%; max-width: 100px;
-    }
-    .p-bar {
-        width: 100%; border-radius: 6px 6px 0 0; 
-        display: flex; flex-direction: column; justify-content: flex-start; align-items: center;
-        padding-top: 10px; color: white; font-weight: bold; font-family: 'Outfit';
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: relative;
-        transition: height 0.5s ease;
-    }
-    /* Rank Colors */
-    .r1 .p-bar { height: 100%; background: #f59e0b; /* Gold */ }
-    .r2 .p-bar { height: 70%; background: #94a3b8; /* Silver */ }
-    .r3 .p-bar { height: 50%; background: #b45309; /* Bronze */ }
     
-    .p-avatar {
-        width: 40px; height: 40px; background: white; border-radius: 50%;
-        display: flex; justify-content: center; align-items: center;
-        font-weight: 900; font-size: 12px; color: var(--text-main);
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 10px; z-index: 2;
-        border: 2px solid white;
+    /* Stats Cards */
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+    .glass-card {
+        background: var(--bg-glass); border: 1px solid rgba(255,255,255,0.05);
+        border-radius: var(--radius); padding: 20px; text-align: center;
+        transition: 0.3s; cursor: pointer; position: relative; overflow: hidden;
     }
-    .r1 .p-avatar { border-color: #f59e0b; transform: scale(1.2); }
+    .glass-card:hover { 
+        background: rgba(255,255,255,0.1); transform: scale(1.05); 
+        border-color: rgba(255,255,255,0.3);
+    }
+    .glass-card.active { border-color: var(--accent); box-shadow: var(--glow-primary); }
     
-    .p-info { margin-top: 8px; text-align: center; }
-    .p-name { font-size: 12px; font-weight: 600; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80px; }
-    .p-pts { font-size: 10px; color: var(--text-sub); }
+    /* Podium */
+    .podium-showcase { display: flex; gap: 15px; align-items: flex-end; justify-content: center; height: 260px; }
+    .pod-char {
+        flex: 1; max-width: 110px; display: flex; flex-direction: column; align-items: center;
+        transition: 0.4s; cursor: pointer;
+    }
+    .pod-char:hover { transform: translateY(-10px); }
+    .pod-img {
+        width: 60px; height: 60px; border-radius: 50%; border: 3px solid white;
+        background: #1e293b; display: flex; justify-content: center; align-items: center;
+        font-weight: 900; font-size: 20px; z-index: 2; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        margin-bottom: -10px;
+    }
+    .pod-bar {
+        width: 100%; border-radius: 8px; position: relative;
+        background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.02) 100%);
+        display: flex; justify-content: center; padding-top: 20px; color: white;
+        font-family: 'Outfit'; font-weight: bold; font-size: 14px;
+    }
+    .r1 .pod-img { border-color: var(--gold); box-shadow: var(--glow-gold); }
+    .r1 .pod-bar { height: 160px; background: linear-gradient(180deg, rgba(251, 191, 36, 0.3) 0%, rgba(251, 191, 36, 0) 100%); border-top: 2px solid var(--gold); }
+    .r2 .pod-bar { height: 120px; border-top: 2px solid #94a3b8; }
+    .r3 .pod-bar { height: 90px; border-top: 2px solid #b45309; }
 
     /* Leaderboard List */
     .list-row {
-        display: flex; justify-content: space-between; align-items: center;
-        background: white; padding: 16px; border-bottom: 1px solid #f1f5f9;
+        background: rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.05);
+        color: white; border-radius: 8px; margin-bottom: 8px; padding: 12px 16px;
+        cursor: pointer; transition: 0.2s;
+    }
+    .list-row:hover { background: rgba(255,255,255,0.08); transform: translateX(5px); }
+    
+    /* Play Button */
+    .fab-area { background: linear-gradient(0deg, #0f172a 20%, transparent 100%); border: none; padding-bottom: 30px; }
+    .btn-play { background: white; color: black; box-shadow: 0 0 30px rgba(255,255,255,0.2); }
+    .btn-play.peak-active {
+        background: var(--danger); color: white;
+        box-shadow: 0 0 40px rgba(239, 68, 68, 0.6);
+        animation: pulseGlow 1.5s infinite;
+    }
+
+    /* --- 3. QUIZ --- */
+    .quiz-page { background: #0f172a; position: relative; }
+    .timer-wrap { height: 6px; background: rgba(255,255,255,0.1); }
+    .timer-bar { box-shadow: 0 0 10px var(--primary); }
+    .countdown-box { font-size: 60px; text-shadow: 0 0 20px rgba(255,255,255,0.2); }
+    .countdown-box.urgent { color: var(--danger); text-shadow: 0 0 30px var(--danger); }
+    
+    .choice-btn {
+        background: rgba(30, 41, 59, 0.8); border: 2px solid rgba(255,255,255,0.1);
+        color: white; border-radius: 16px; height: 100%; min-height: 70px;
+        font-size: 20px; transition: 0.2s;
+    }
+    .choice-btn:hover {
+        background: var(--primary); border-color: var(--accent);
+        transform: scale(1.02); box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+    }
+    .choice-btn.correct { background: #10b981; border-color: #34d399; box-shadow: 0 0 30px rgba(16, 185, 129, 0.6); }
+    .choice-btn.incorrect { background: #ef4444; border-color: #f87171; box-shadow: 0 0 30px rgba(239, 68, 68, 0.6); animation: shake 0.4s; }
+
+    .pop-score {
+        background: linear-gradient(45deg, #fbbf24, #d97706);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        font-size: 120px; filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.5));
+        animation: float 1s infinite;
+    }
+
+    /* --- 🃏 PLAYER STATS CARD (Game Show Style) --- */
+    .player-modal {
+        display: none; position: fixed; inset: 0; z-index: 200;
+        justify-content: center; align-items: center;
+        background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px);
+        opacity: 0; transition: opacity 0.3s;
+    }
+    .player-modal.active { display: flex; opacity: 1; }
+
+    .p-card {
+        width: 90%; max-width: 500px;
+        background: linear-gradient(145deg, #1e293b, #0f172a);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 24px; padding: 0;
+        box-shadow: 0 0 50px rgba(37, 99, 235, 0.3);
+        transform: scale(0.8) translateY(50px);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        overflow: hidden; position: relative;
+    }
+    .player-modal.active .p-card { transform: scale(1) translateY(0); }
+
+    .pc-header {
+        background: url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80') center/cover;
+        height: 120px; position: relative;
+        display: flex; align-items: flex-end; padding: 20px;
+    }
+    .pc-header::before {
+        content:''; position: absolute; inset: 0;
+        background: linear-gradient(0deg, #0f172a 0%, rgba(15,23,42,0.6) 100%);
+    }
+    .pc-avatar {
+        width: 80px; height: 80px; border-radius: 50%;
+        background: #0f172a; border: 3px solid var(--accent);
+        display: flex; justify-content: center; align-items: center;
+        font-size: 32px; font-weight: 900; color: white;
+        box-shadow: 0 0 20px rgba(6, 182, 212, 0.5);
+        position: relative; z-index: 2; margin-bottom: -10px;
+    }
+    .pc-info { position: relative; z-index: 2; margin-left: 20px; color: white; margin-bottom: 5px; }
+    .pc-name { font-size: 24px; font-weight: bold; line-height: 1; margin-bottom: 5px; }
+    .pc-site { font-size: 14px; color: var(--accent); letter-spacing: 2px; text-transform: uppercase; }
+
+    .pc-body { padding: 30px 20px 20px 20px; }
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+    .stat-box {
+        background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
+        border-radius: 12px; padding: 15px;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        position: relative; overflow: hidden;
+    }
+    .stat-box::after {
+        content:''; position: absolute; top:0; left:0; width:100%; height:2px;
+        background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    }
+    .sb-icon { font-size: 20px; color: var(--text-sub); margin-bottom: 5px; }
+    .sb-val { font-size: 24px; font-weight: 900; color: white; font-family: 'Outfit'; }
+    .sb-lbl { font-size: 12px; color: var(--text-sub); text-transform: uppercase; letter-spacing: 1px; }
+
+    .btn-close-card {
+        position: absolute; top: 15px; right: 15px; z-index: 10;
+        background: rgba(0,0,0,0.5); border: none; color: white;
+        width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+        display: flex; justify-content: center; align-items: center;
         transition: 0.2s;
     }
-    .list-row:last-child { border-bottom: none; }
-    .list-row:hover { background: #f8fafc; }
-    
-    .rk-left { display: flex; align-items: center; gap: 15px; }
-    .rk-idx { 
-        width: 24px; height: 24px; background: #e2e8f0; border-radius: 4px;
-        display: flex; justify-content: center; align-items: center;
-        font-size: 12px; font-weight: 700; color: #64748b; font-family: 'Outfit';
-    }
-    .list-row:nth-child(1) .rk-idx { background: #fef3c7; color: #d97706; }
-    .list-row:nth-child(2) .rk-idx { background: #f1f5f9; color: #475569; }
-    .list-row:nth-child(3) .rk-idx { background: #ffedd5; color: #9a3412; }
-
-    .rk-pts { 
-        font-family: 'Outfit'; font-weight: 700; color: var(--text-main); 
-        background: #f1f5f9; padding: 4px 10px; border-radius: 20px; font-size: 14px;
-    }
-
-    /* FAB Area */
-    .fab-area {
-        position: fixed; bottom: 0; left: 0; width: 100%; 
-        padding: 20px; z-index: 90;
-        background: white; border-top: 1px solid #e2e8f0;
-        display: flex; justify-content: center;
-        box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
-    }
-    .btn-play {
-        width: 100%; max-width: 500px; padding: 18px; border-radius: 12px; border: none;
-        background: var(--text-main); color: white; font-size: 18px; font-weight: 600;
-        cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px;
-        transition: all 0.3s;
-    }
-    .btn-play.peak-active {
-        background: linear-gradient(45deg, #ef4444, #f97316);
-        box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
-        animation: pulseBtn 1.5s infinite;
-    }
-    .btn-play.state-locked {
-        background: #e2e8f0; color: #94a3b8; pointer-events: none;
-    }
-    @keyframes pulseBtn { 0% {transform:scale(1);} 50% {transform:scale(1.02);} 100% {transform:scale(1);} }
-
-    .peak-info-pill {
-        background: rgba(255,255,255,0.2); font-size: 14px; 
-        padding: 2px 8px; border-radius: 4px; font-family: 'Outfit';
-    }
-
-    /* --- 3. QUIZ (Focus Mode) --- */
-    .quiz-page { background: #fff; height: 100%; display: flex; flex-direction: column; }
-    
-    .peak-banner {
-        background: #ef4444; color: white; text-align: center; padding: 8px;
-        font-weight: 700; font-size: 14px; display: none;
-    }
-
-    .timer-wrap { width: 100%; height: 8px; background: #e2e8f0; }
-    .timer-bar { height: 100%; background: var(--primary); width: 100%; transition: width 0.1s linear, background-color 0.3s; }
-
-    .quiz-head {
-        padding: 20px; display: flex; justify-content: space-between; align-items: center;
-        border-bottom: 1px solid #f1f5f9;
-    }
-    .countdown-box {
-        font-size: 48px; font-family: 'Outfit'; font-weight: 900; color: var(--text-main);
-        font-variant-numeric: tabular-nums;
-    }
-    .countdown-box.urgent { color: var(--danger); animation: shake 0.5s infinite; }
-    @keyframes shake { 0%{transform:translateX(0);} 25%{transform:translateX(-2px);} 75%{transform:translateX(2px);} 100%{transform:translateX(0);} }
-
-    .q-main { 
-        flex: 1; padding: 30px 20px; overflow-y: auto; 
-        max-width: 800px; margin: 0 auto; width: 100%;
-        display: flex; flex-direction: column; justify-content: center;
-    }
-    .q-txt { font-size: 24px; font-weight: 600; color: var(--text-main); text-align: center; margin-bottom: 40px; line-height: 1.4; }
-    
-    .choice-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
-    @media (min-width: 600px) { .choice-grid { grid-template-columns: 1fr 1fr; } }
-
-    .choice-btn {
-        width: 100%; padding: 20px; background: white;
-        border: 2px solid #e2e8f0; border-radius: 12px; text-align: left;
-        font-size: 18px; font-weight: 500; color: var(--text-main);
-        transition: 0.1s; position: relative; overflow: hidden;
-    }
-    .choice-btn:hover { border-color: #cbd5e1; background: #f8fafc; }
-    .choice-btn:active { transform: scale(0.98); }
-    
-    .choice-btn.correct { background: #dcfce7; border-color: #16a34a; color: #14532d; }
-    .choice-btn.incorrect { background: #fee2e2; border-color: #dc2626; color: #7f1d1d; }
-
-    .panic-overlay {
-        position: absolute; inset: 0; pointer-events: none; z-index: 50;
-        box-shadow: inset 0 0 0 0 var(--danger); transition: 0.2s;
-    }
-    .panic-overlay.active { animation: panicFlash 0.5s infinite; }
-    @keyframes panicFlash { 0%,100%{box-shadow: inset 0 0 0 0 var(--danger);} 50%{box-shadow: inset 0 0 50px 10px rgba(239,68,68,0.5);} }
-
-    /* --- 4. ADMIN --- */
-    .admin-p { padding: 20px; background: #f8fafc; min-height: 100vh; max-width: 1200px; margin: 0 auto;}
-    .adm-h { display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center; }
-    .adm-tabs { display: flex; gap: 10px; margin-bottom: 20px; background: white; padding: 5px; border-radius: var(--radius); border: 1px solid #e2e8f0; }
-    .adm-tab { 
-        flex: 1; padding: 10px; border: none; background: transparent; 
-        font-weight: 600; color: var(--text-sub); cursor: pointer; border-radius: 6px; 
-    }
-    .adm-tab:hover { background: #f1f5f9; }
-    /* This part requires JS logic to toggle active class, keeping it simple style for now */
-
-    .tbl-wrap { background: white; border-radius: var(--radius); border: 1px solid #e2e8f0; overflow: hidden; }
-    .adm-tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
-    .adm-tbl th { background: #f1f5f9; padding: 15px; text-align: left; font-weight: 600; color: var(--text-sub); border-bottom: 1px solid #e2e8f0; }
-    .adm-tbl td { padding: 15px; border-bottom: 1px solid #e2e8f0; color: var(--text-main); }
-    .adm-tbl tr:last-child td { border-bottom: none; }
-    
-    .btn-sm { padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; border: none; }
-    .bg-green { background: #10b981; color: white; }
-    .bg-red { background: #ef4444; color: white; }
-    .bg-blue { background: #3b82f6; color: white; }
+    .btn-close-card:hover { background: var(--danger); transform: rotate(90deg); }
 
     /* Utilities */
-    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
-    
-    .modal-box { 
-        background: white; width: 90%; max-width: 450px; padding: 30px; 
-        border-radius: 16px; text-align: left; box-shadow: var(--shadow-lg); 
-    }
-    .modal-title { font-size: 24px; font-weight: 700; margin-bottom: 20px; color: var(--text-main); }
-    
-    .pop-score { 
-        position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
-        font-size: 100px; font-weight: 900; color: #fbbf24;
-        text-shadow: 0 10px 30px rgba(0,0,0,0.3); z-index: 300; 
-        pointer-events: none; font-family: 'Outfit';
-    }
+    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 2000; display: flex; justify-content: center; align-items: center; }
+    .modal-box { background: #1e293b; color: white; border: 1px solid #334155; width: 90%; max-width: 450px; padding: 30px; border-radius: 16px; box-shadow: var(--shadow-lg); }
 
   </style>
  </head>
  <body>
 
-  <div id="loading" class="overlay" style="display:none; background:white; color:#2563eb;">
+  <div id="loading" class="overlay" style="display:none;">
       <div style="text-align:center;">
-        <i class="fas fa-circle-notch fa-spin" style="font-size:50px;"></i>
-        <div style="margin-top:20px; font-weight:bold; letter-spacing:1px;">LOADING DATA...</div>
+        <i class="fas fa-circle-notch fa-spin" style="font-size:50px; color:var(--primary); text-shadow: 0 0 20px var(--primary);"></i>
+        <div style="margin-top:20px; font-weight:bold; letter-spacing:2px; color:white;">INITIALIZING SYSTEM...</div>
       </div>
   </div>
+  
   <div id="scoreEff" class="pop-score" style="display:none;">+50</div>
+
+  <div id="playerModal" class="player-modal">
+    <div class="p-card">
+        <button class="btn-close-card" onclick="closePlayerStats()"><i class="fas fa-times"></i></button>
+        <div class="pc-header">
+            <div class="pc-avatar" id="pcAvatar">?</div>
+            <div class="pc-info">
+                <div class="pc-name" id="pcName">Loading...</div>
+                <div class="pc-site" id="pcSite">...</div>
+            </div>
+        </div>
+        <div class="pc-body">
+            <div class="stat-grid">
+                <div class="stat-box">
+                    <div class="sb-icon"><i class="fas fa-gamepad"></i></div>
+                    <div class="sb-val" id="pcGames">-</div>
+                    <div class="sb-lbl">Total Answers</div>
+                </div>
+                <div class="stat-box">
+                    <div class="sb-icon"><i class="fas fa-star-half-alt" style="color:#fbbf24;"></i></div>
+                    <div class="sb-val" id="pcAvgPt">-</div>
+                    <div class="sb-lbl">Avg Score</div>
+                </div>
+                <div class="stat-box">
+                    <div class="sb-icon"><i class="fas fa-bolt" style="color:#ef4444;"></i></div>
+                    <div class="sb-val" id="pcFast">-</div>
+                    <div class="sb-lbl">Best Speed</div>
+                </div>
+                <div class="stat-box">
+                    <div class="sb-icon"><i class="fas fa-stopwatch" style="color:#3b82f6;"></i></div>
+                    <div class="sb-val" id="pcAvgTime">-</div>
+                    <div class="sb-lbl">Avg Speed</div>
+                </div>
+            </div>
+            <div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; text-align:center;">
+                <div style="font-size:12px; color:#94a3b8; margin-bottom:5px;">TOTAL SCORE ACCUMULATED</div>
+                <div style="font-size:36px; font-weight:900; color:var(--accent); font-family:'Outfit';" id="pcTotal">0</div>
+            </div>
+        </div>
+    </div>
+  </div>
 
   <div id="addModal" class="overlay" style="display:none;">
       <div class="modal-box">
-          <div class="modal-title" id="modalTitle">Add New Item</div>
+          <div class="modal-title" id="modalTitle" style="font-size:20px; font-weight:bold; margin-bottom:20px;">Config</div>
           <div id="modalContent"></div>
           <div style="display: flex; gap: 10px; margin-top: 30px;">
-              <button class="btn-modern" style="background:#e2e8f0; color:#64748b;" onclick="closeModal()">Cancel</button>
-              <button class="btn-modern" onclick="saveData()">Save Record</button>
+              <button class="btn-modern" style="background:#334155; box-shadow:none;" onclick="closeModal()">Cancel</button>
+              <button class="btn-modern" onclick="saveData()">Save</button>
           </div>
       </div>
   </div>
 
   <div id="pgLogin" class="page-container active">
    <div class="login-wrap">
+    <div class="login-overlay"></div>
     <div class="login-card">
-     <div style="font-size:60px; margin-bottom:20px;">🚀</div>
+     <div style="font-size:60px; margin-bottom:20px; animation: float 3s infinite ease-in-out;">🚀</div>
      <h1 class="brand-logo">GREAT</h1>
-     <div class="brand-sub">Performance Ranking System</div>
+     <div class="brand-sub" style="color:var(--text-sub); margin-bottom:30px; letter-spacing:3px;">GAME EDITION</div>
      
      <form onsubmit="doLogin(event)">
-      <input type="text" id="lid" class="inp-modern" placeholder="Enter Employee ID" required autocomplete="off">
-      <button type="submit" class="btn-modern">ENTER SYSTEM</button>
-      <div id="lErr" style="color:#ef4444; margin-top:20px; font-weight:600;"></div>
+      <input type="text" id="lid" class="inp-modern" placeholder="EMPLOYEE ID" required autocomplete="off">
+      <button type="submit" class="btn-modern">ENTER GAME</button>
+      <div id="lErr" style="color:#ef4444; margin-top:20px; font-weight:600; text-shadow: 0 0 10px rgba(239,68,68,0.5);"></div>
      </form>
     </div>
-    <div style="margin-top: 30px; color: rgba(255,255,255,0.4); font-size: 12px;">&copy; 2026 Learning Hub</div>
    </div>
   </div>
 
   <div id="pgMain" class="page-container">
     <div class="top-bar">
-        <div class="app-brand">
-            GREAT <span>CENTER</span>
+        <div class="app-brand" style="font-family:'Outfit'; font-weight:900; font-size:24px; color:white;">
+            get <span style="color:var(--danger);">GREAT</span>
         </div>
         <div class="user-pill">
             <div class="u-info">
-                <div class="u-name" id="uName">User</div>
-                <div class="u-site" id="uSite">SITE</div>
+                <div class="u-name" id="uName">Player</div>
             </div>
-            <button class="btn-logout" onclick="doLogout()"><i class="fas fa-power-off"></i></button>
+            <button class="btn-logout" onclick="doLogout()" style="background:transparent; color:white; border:none;"><i class="fas fa-sign-out-alt"></i></button>
         </div>
     </div>
 
-    <div class="content">
-        <div class="main-wrapper">
-            <div class="dashboard-grid">
-                
-                <div>
-                    <div class="card my-stats-card">
-                        <div class="stat-group">
-                            <div class="stat-label">Current Rank</div>
-                            <div class="stat-value" id="myRankVal">-</div>
-                        </div>
-                        <div class="stat-div"></div>
-                        <div class="stat-group">
-                            <div class="stat-label">Total Points</div>
-                            <div class="stat-value" id="myScoreVal">0</div>
-                        </div>
-                    </div>
-
-                    <div class="h-title">
-                        <i class="fas fa-chart-pie" style="color:var(--primary);"></i> Site Performance
-                    </div>
-                    <div class="stats-grid" id="siteArea"></div>
-
-                    <div class="h-title">
-                        <i class="fas fa-trophy" style="color:#f59e0b;"></i> Top Performers
-                    </div>
-                    <div class="card" style="margin-bottom:20px;">
-                        <div class="podium-wrap" id="podArea"></div>
-                    </div>
-                </div>
-
-                <div>
-                    <div class="h-title">
-                        <i class="fas fa-list-ol" style="color:var(--text-sub);"></i> Leaderboard <span id="lbSite" style="color:var(--primary); margin-left:5px; font-size:14px;"></span>
-                    </div>
-                    <div class="card" style="padding:0; overflow:hidden;">
-                        <div id="rankArea"></div>
-                    </div>
-                </div>
-                
+    <div class="hero-banner" style="background-image: url('https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1470&auto=format&fit=crop');">
+        <div class="hero-content">
+            <div class="hero-sub"><i class="fas fa-map-marker-alt" style="color:var(--accent);"></i> <span id="uSite">SITE</span> DIVISION</div>
+            <div class="hero-rank-badge">
+                <span style="font-size:30px; opacity:0.6;">RANK</span>
+                <span id="myRankVal">#1</span>
+            </div>
+            <div style="font-size:24px; font-weight:700; color:white; display:flex; gap:15px; align-items:center;">
+                <span id="myScoreVal">0</span> PTS 
+                <div style="width:2px; height:20px; background:rgba(255,255,255,0.3);"></div>
+                <span style="font-size:14px; color:#94a3b8; font-weight:normal;">SEASON 1</span>
             </div>
         </div>
+    </div>
+
+    <div class="section-row">
+        <div class="row-title"><i class="fas fa-crown" style="color:var(--gold);"></i> TOP PERFORMERS</div>
+        <div class="podium-showcase" id="podArea"></div>
+    </div>
+
+    <div class="section-row">
+        <div class="row-title"><i class="fas fa-chart-bar" style="color:var(--accent);"></i> SITE WAR</div>
+        <div class="stats-grid" id="siteArea"></div>
+    </div>
+
+    <div class="section-row" style="padding-bottom:120px;">
+        <div class="row-title"><i class="fas fa-list" style="color:white;"></i> LOCAL LEADERBOARD <span id="lbSite" style="color:var(--text-sub); margin-left:10px;"></span></div>
+        <div id="rankArea"></div>
     </div>
 
     <div class="fab-area">
-        <button id="btnPlay" class="btn-play" onclick="startQuiz()">
-            <i class="fas fa-gamepad"></i> START QUIZ
-        </button>
+        <div style="max-width:500px; margin:0 auto; padding:0 20px;">
+            <button id="btnPlay" class="btn-play btn-modern" onclick="startQuiz()">
+                <i class="fas fa-play"></i> START QUIZ
+            </button>
+        </div>
     </div>
   </div>
 
   <div id="pgQuiz" class="page-container">
-    <div class="quiz-page">
-        <div id="peakBanner" class="peak-banner">
-            🔥 PEAK TIME (DOUBLE POINTS) <span id="peakTimer" style="font-weight:normal; opacity:0.9;"></span>
+    <div class="quiz-page" style="height:100%; display:flex; flex-direction:column;">
+        <div id="peakBanner" class="peak-banner" style="background:var(--danger); text-align:center; padding:5px; font-weight:bold; box-shadow: 0 0 20px var(--danger); z-index:10; display:none;">
+            🔥 DOUBLE POINTS ACTIVE <span id="peakTimer"></span>
         </div>
 
         <div id="panicOverlay" class="panic-overlay"></div>
 
         <div class="timer-wrap"><div id="tBar" class="timer-bar"></div></div>
         
-        <div class="quiz-head">
-            <div onclick="exitQuiz()" style="font-size:24px; color:#cbd5e1; cursor:pointer; padding:10px;"><i class="fas fa-times"></i></div>
-            
+        <div class="quiz-head" style="padding:20px; display:flex; justify-content:space-between; align-items:center;">
+            <div onclick="exitQuiz()" style="font-size:24px; color:#64748b; cursor:pointer;"><i class="fas fa-times"></i></div>
             <div style="text-align:center;">
-                <div style="font-size:12px; color:#94a3b8; font-weight:bold; letter-spacing:1px; text-transform:uppercase;">Time Remaining</div>
                 <div id="bigCountdown" class="countdown-box">8.0</div>
             </div>
-
-            <div style="background:var(--primary); color:white; padding:5px 15px; border-radius:20px; font-size:14px; font-weight:bold;">
-                <i class="fas fa-fire"></i> <span id="streak">0</span>
+            <div style="background:rgba(255,255,255,0.1); padding:5px 15px; border-radius:20px; font-size:14px; font-weight:bold; border:1px solid rgba(255,255,255,0.2);">
+                <i class="fas fa-fire" style="color:orange;"></i> <span id="streak">0</span>
             </div>
         </div>
 
-        <div class="q-main">
+        <div class="q-main" style="flex:1; padding:20px; display:flex; flex-direction:column; justify-content:center; max-width:800px; margin:0 auto; width:100%;">
             <div id="qArea" style="width:100%;"></div>
         </div>
     </div>
   </div>
 
   <div id="pgAdmin" class="page-container">
-   <div class="admin-p">
+   <div class="admin-p" style="background:#0f172a; color:white; min-height:100vh;">
     <div class="adm-h">
-        <h2 style="margin:0; color:var(--text-main);">🛡️ Admin Console</h2>
-        <button class="btn-sm bg-red" onclick="doLogout()">Log Out</button>
+        <h2 style="margin:0;">🛡️ Admin</h2>
+        <button class="btn-sm bg-red" onclick="doLogout()">Out</button>
     </div>
-    
-    <div class="adm-tabs">
-        <button onclick="setTab('emp')" class="adm-tab">Users</button>
-        <button onclick="setTab('quiz')" class="adm-tab">Questions</button>
-        <button onclick="setTab('peak')" class="adm-tab">Peak Times</button>
+    <div class="adm-tabs" style="background:#1e293b; border-color:#334155;">
+        <button onclick="setTab('emp')" class="adm-tab" style="color:white;">Users</button>
+        <button onclick="setTab('quiz')" class="adm-tab" style="color:white;">Questions</button>
+        <button onclick="setTab('peak')" class="adm-tab" style="color:white;">Peak</button>
     </div>
-
     <div style="display:flex; gap:10px; margin-bottom:20px;">
-        <input id="admS" placeholder="Search data..." style="padding:10px; border:1px solid #cbd5e1; border-radius:var(--radius); flex:1;" onkeyup="renderAdmin()">
-        <button onclick="openAddModal()" class="btn-sm bg-green" style="font-size:14px; padding:0 20px;">+ Add New</button>
+        <input id="admS" placeholder="Search..." style="background:#1e293b; color:white; border:1px solid #334155; padding:10px; border-radius:8px; flex:1;" onkeyup="renderAdmin()">
+        <button onclick="openAddModal()" class="btn-sm bg-green" style="padding:0 20px;">+ Add</button>
     </div>
-    
-    <div class="tbl-wrap"><div id="admTbl" style="overflow-x:auto;"></div></div>
+    <div class="tbl-wrap" style="background:#1e293b; border-color:#334155;"><div id="admTbl" style="overflow-x:auto;"></div></div>
    </div>
   </div>
 
@@ -524,21 +494,71 @@
     const RATES = { 'HO': 53.58, 'PPD': 100.00, 'NKL': 59.39 };
     
     const sb = window.supabase.createClient(SB_URL, SB_KEY);
-    // st object สำหรับเก็บสถานะ (เพิ่ม qStartTime เพื่อดักความเร็ว)
     let st = { u: null, e: [], q: [], l: [], p: [], s: 0, t: null, tab: 'emp', lastId: null, isPeak: false, canPlay: false, timeOffset: 0, qStartTime: 0 };
     let quizInterval = null;
 
-    // --- 🛡️ ANTI-CHEAT: SPEED TRAP ---
-    function checkCheating(timeTaken) {
-        // ถ้าตอบเร็วกว่า 0.7 วินาที (700ms) ให้ถือว่าใช้ Script หรือ Bookmarklet
-        if (timeTaken < 700) {
-            alert("อย่าโกงงงงงงงงงงงงงง");
-            return true;
+    // --- 🃏 PLAYER STATS LOGIC ---
+    async function openPlayerStats(empId) {
+        const modal = document.getElementById('playerModal');
+        modal.classList.add('active');
+        document.getElementById('pcName').innerText = "Loading...";
+        document.getElementById('pcGames').innerText = "-";
+        document.getElementById('pcTotal').innerText = "-";
+
+        try {
+            const [uRes, lRes] = await Promise.all([
+                sb.from('employees').select('*').eq('employee_id', empId).single(),
+                sb.from('logs').select('point, created_at').eq('employee_id', empId).order('created_at', {ascending: true})
+            ]);
+            const u = uRes.data;
+            const logs = lRes.data || [];
+
+            if(u) {
+                document.getElementById('pcName').innerText = u.name;
+                document.getElementById('pcSite').innerText = u.site;
+                document.getElementById('pcAvatar').innerText = u.name.charAt(0);
+            }
+
+            const totalGames = logs.length;
+            const totalPoints = logs.reduce((sum, l) => sum + (l.point || 0), 0);
+            const avgPoints = totalGames > 0 ? (totalPoints / totalGames).toFixed(1) : "0";
+
+            let timeDiffs = [];
+            for (let i = 1; i < logs.length; i++) {
+                const tCurrent = new Date(logs[i].created_at).getTime();
+                const tPrev = new Date(logs[i-1].created_at).getTime();
+                const diff = tCurrent - tPrev;
+                if (diff > 500 && diff < 15000) { timeDiffs.push(diff); }
+            }
+
+            let fastest = "-";
+            let avgTime = "-";
+            if (timeDiffs.length > 0) {
+                const minMs = Math.min(...timeDiffs);
+                const avgMs = timeDiffs.reduce((a, b) => a + b, 0) / timeDiffs.length;
+                fastest = (minMs / 1000).toFixed(2) + "s";
+                avgTime = (avgMs / 1000).toFixed(2) + "s";
+            }
+
+            document.getElementById('pcGames').innerText = fmt(totalGames);
+            document.getElementById('pcTotal').innerText = fmt(totalPoints);
+            document.getElementById('pcAvgPt').innerText = avgPoints;
+            document.getElementById('pcFast').innerText = fastest;
+            document.getElementById('pcAvgTime').innerText = avgTime;
+        } catch (err) {
+            console.error(err);
+            closePlayerStats();
         }
-        return false;
     }
 
-    // ฟังก์ชันช่วยจัดการ UI อื่นๆ (คงเดิม)
+    function closePlayerStats() { document.getElementById('playerModal').classList.remove('active'); }
+
+    // --- GAME ENGINE ---
+    function checkCheating(timeTaken) {
+        if (timeTaken < 700) { alert("🚨 SYSTEM ALERT: Too Fast! (Anti-Cheat)"); return true; }
+        return false;
+    }
+    
     function fmt(n) { return n.toLocaleString(); } 
     function nav(id) {
         document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
@@ -555,73 +575,179 @@
         return array;
     }
 
-    // --- ปรับปรุงฟังก์ชัน loadQ เพื่อเริ่มนับเวลา ---
+    async function syncTime() {
+        try {
+            const { data } = await sb.rpc('get_server_time');
+            if(data) st.timeOffset = new Date(data).getTime() - Date.now();
+        } catch(err) {}
+    }
+
+    function render() {
+        const users = st.e.filter(u => u.is_active!==false).map(u => {
+            const p = st.l.filter(l => l.employee_id === u.employee_id).reduce((a,b)=>a+(b.point||0),0);
+            return { ...u, pts: p, cleanSite: u.site.trim().toUpperCase() };
+        }).sort((a,b)=>b.pts-a.pts);
+
+        // Update Hero Stats
+        const myIdx = users.findIndex(u => u.employee_id === st.u.employee_id);
+        if (myIdx !== -1) {
+            document.getElementById('myRankVal').innerText = "#" + (myIdx + 1);
+            document.getElementById('myScoreVal').innerText = fmt(users[myIdx].pts);
+        }
+
+        // Site Stats
+        const sSum = { 'HO':0, 'PPD':0, 'NKL':0 };
+        users.forEach(u => { if(sSum[u.cleanSite] !== undefined) sSum[u.cleanSite] += u.pts; });
+        const sortedSites = Object.entries(sSum).map(([k, v]) => {
+            const r = RATES[k]||100;
+            const g = Math.floor(v/r);
+            return { site: k, great: g };
+        }).sort((a, b) => b.great - a.great);
+
+        let h = '';
+        sortedSites.forEach(item => {
+            const k = item.site;
+            const act = k===st.u.site.trim().toUpperCase() ? 'active' : '';
+            h += `<div class="glass-card ${act}">
+                    <div style="font-size:12px; color:#94a3b8; margin-bottom:5px;">${k}</div>
+                    <div style="font-size:28px; font-weight:800; font-family:'Outfit'; color:${act?'var(--accent)':'white'};">${fmt(item.great)}</div>
+                  </div>`;
+        });
+        document.getElementById('siteArea').innerHTML = h;
+
+        // Podium
+        const actU = users.filter(u=>u.pts>0);
+        const t3 = actU.slice(0,3);
+        if(t3.length) {
+            let ph = '';
+            if(t3[1]) ph += pCol(t3[1],2); else ph += '<div class="pod-char"></div>';
+            if(t3[0]) ph += pCol(t3[0],1);
+            if(t3[2]) ph += pCol(t3[2],3); else ph += '<div class="pod-char"></div>';
+            document.getElementById('podArea').innerHTML = ph;
+        } else {
+            document.getElementById('podArea').innerHTML = '<div style="color:#94a3b8; width:100%; text-align:center;">SEASON STARTING SOON</div>';
+        }
+
+        // Leaderboard
+        const myS = users.filter(u => u.cleanSite === st.u.site.trim().toUpperCase() && u.pts>0).slice(0,10);
+        document.getElementById('rankArea').innerHTML = myS.map((u,i) => `
+            <div class="list-row animate-enter" style="animation-delay:${i*0.05}s" onclick="openPlayerStats('${u.employee_id}')">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="display:flex; align-items:center; gap:15px;">
+                        <div class="rk-idx" style="width:25px; height:25px; display:flex; justify-content:center; align-items:center; border-radius:5px; font-weight:bold; background:rgba(255,255,255,0.1);">${i+1}</div>
+                        <div style="font-weight:600;">${u.name}</div>
+                    </div>
+                    <div class="rk-pts" style="padding:2px 10px; border-radius:10px; font-size:14px; font-weight:bold; background:rgba(0,0,0,0.3); color:var(--accent);">${fmt(u.pts)}</div>
+                </div>
+            </div>
+        `).join('') || '<div style="text-align:center; padding:20px; color:#94a3b8;">No Players Yet</div>';
+    }
+
+    function pCol(u,r) {
+        return `<div class="pod-char r${r}" onclick="openPlayerStats('${u.employee_id}')">
+                    <div class="pod-img">${r}</div>
+                    <div class="pod-bar">
+                        <div style="position:absolute; bottom:10px; text-align:center; width:100%;">
+                            <div style="font-size:12px; opacity:0.8;">${u.name.split(' ')[0]}</div>
+                            <div style="font-size:16px; color:white;">${fmt(u.pts)}</div>
+                        </div>
+                    </div>
+                </div>`;
+    }
+
+    function updatePlayButton(session, nextStartMins, curTotalSecs) {
+        const btn = document.getElementById('btnPlay');
+        const banner = document.getElementById('peakBanner');
+        const isQuizPage = document.getElementById('pgQuiz').classList.contains('active');
+
+        if (session) {
+            st.canPlay = true; st.isPeak = session.is_peak;
+            let diff = session.endTotal - curTotalSecs;
+            if (diff < 0) diff += (24 * 60 * 60);
+            const h = Math.floor(diff / 3600);
+            const m = Math.floor((diff % 3600) / 60);
+            const s = diff % 60;
+            const timeTxt = `${h}:${m<10?'0'+m:m}:${s<10?'0'+s:s}`;
+
+            btn.disabled = false; btn.style.opacity = '1';
+            
+            if (st.isPeak) {
+                btn.className = 'btn-play btn-modern peak-active';
+                btn.innerHTML = `<i class="fas fa-bolt"></i> PLAY x2 (${timeTxt})`;
+                if(isQuizPage) { banner.style.display = 'block'; document.getElementById('peakTimer').innerText = timeTxt; }
+            } else {
+                btn.className = 'btn-play btn-modern';
+                btn.innerHTML = `<i class="fas fa-play"></i> PLAY (${timeTxt})`;
+                if(isQuizPage) banner.style.display = 'none';
+            }
+        } else {
+            st.canPlay = false; st.isPeak = false;
+            if (isQuizPage) { exitQuiz(); return; }
+            btn.disabled = true; btn.style.opacity = '0.5'; btn.className = 'btn-play btn-modern';
+            
+            if (nextStartMins !== 9999) {
+                const diff = (nextStartMins * 60) - curTotalSecs;
+                const m = Math.floor((diff % 3600) / 60);
+                const s = diff % 60;
+                btn.innerHTML = `<i class="fas fa-lock"></i> NEXT: ${m}m ${s}s`;
+            } else { btn.innerHTML = `CLOSED`; }
+        }
+    }
+
+    function startQuiz() {
+        if(!st.canPlay) return;
+        const vq = st.q.filter(q=>q.is_active!==false);
+        if(!vq.length) { alert('No Questions'); return; }
+        st.s=0; nav('pgQuiz'); loadQ(vq);
+    }
+
     function loadQ(lst) {
         const tBar = document.getElementById('tBar');
         const panic = document.getElementById('panicOverlay');
         const countBox = document.getElementById('bigCountdown');
 
-        tBar.style.width = '100%';
-        tBar.style.background = '#2563eb';
-        panic.classList.remove('active');
-        countBox.classList.remove('urgent');
-        countBox.innerText = "8.0";
+        tBar.style.width = '100%'; tBar.style.background = 'var(--primary)';
+        panic.classList.remove('active'); countBox.classList.remove('urgent'); countBox.innerText = "8.0";
 
         clearInterval(quizInterval);
         document.getElementById('streak').innerText = st.s;
         
         let available = lst;
-        if (lst.length > 1 && st.lastId) {
-            available = lst.filter(q => q.id !== st.lastId);
-        }
-        
+        if (lst.length > 1 && st.lastId) { available = lst.filter(q => q.id !== st.lastId); }
         st.curQ = available[Math.floor(Math.random()*available.length)];
         st.lastId = st.curQ.id; 
-        
-        // 🏁 บันทึกเวลาที่เริ่มโชว์คำถาม
         st.qStartTime = Date.now(); 
 
         const basePt = Math.min((st.s+1)*10, 50);
         const finalPt = st.isPeak ? basePt * 2 : basePt;
 
         document.getElementById('qArea').innerHTML = `
-            <div style="text-align:center;">
-                <div class="q-txt">${st.curQ.question}</div>
-                <div style="color:var(--primary); font-weight:bold; margin-bottom:20px; font-size:14px;">WIN: +${finalPt} ${st.isPeak?'(x2)':''}</div>
+            <div style="text-align:center; animation: slideUpFade 0.3s ease;">
+                <div class="q-txt" style="font-size: 32px; font-weight: 800; line-height: 1.4;">${st.curQ.question}</div>
+                <div style="color:var(--accent); font-weight:bold; margin-bottom:30px; font-size:16px; letter-spacing:1px;">POTENTIAL WIN: +${finalPt}</div>
             </div>
-            <div class="choice-grid">
-                ${shuffle([1,2,3,4]).map(i => `<button class="choice-btn" onclick="ans('${i}',this)">${st.curQ['option_'+i]}</button>`).join('')}
+            <div class="choice-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                ${shuffle([1,2,3,4]).map((i, idx) => `<button class="choice-btn" style="animation: slideUpFade 0.3s ease ${idx*0.1}s backwards;" onclick="ans('${i}',this)">${st.curQ['option_'+i]}</button>`).join('')}
             </div>
         `;
 
         let timeLeft = 8.0;
         quizInterval = setInterval(() => {
             timeLeft -= 0.1;
-            const pct = (timeLeft / 8.0) * 100;
-            tBar.style.width = pct + '%';
+            tBar.style.width = (timeLeft/8.0)*100 + '%';
             countBox.innerText = Math.max(0, timeLeft).toFixed(1);
             if(timeLeft <= 3.0) {
-                tBar.style.background = '#ef4444';
+                tBar.style.background = 'var(--danger)';
                 panic.classList.add('active');
                 countBox.classList.add('urgent');
             }
-            if(timeLeft <= 0) {
-                clearInterval(quizInterval);
-                endQ(false);
-            }
+            if(timeLeft <= 0) { clearInterval(quizInterval); endQ(false); }
         }, 100);
     }
 
-    // --- ปรับปรุงฟังก์ชัน ans เพื่อตรวจจับการโกง ---
     async function ans(v,btn) {
-        // 🕒 คำนวณเวลาที่ใช้ไปนับตั้งแต่โชว์คำถาม
         const timeTaken = Date.now() - st.qStartTime;
-
-        // 🚨 ตรวจสอบบอท
-        if (checkCheating(timeTaken)) {
-            exitQuiz(); // เด้งออกไปหน้าหลักทันที
-            return;
-        }
+        if (checkCheating(timeTaken)) { exitQuiz(); return; }
 
         clearInterval(quizInterval);
         document.getElementById('panicOverlay').classList.remove('active');
@@ -632,11 +758,13 @@
             const basePt = Math.min((st.s+1)*10, 50);
             const pt = st.isPeak ? basePt * 2 : basePt;
             st.s++;
-            const pp = document.getElementById('scoreEff'); pp.innerText="+"+pt; pp.style.display='block';
-            setTimeout(()=>pp.style.display='none',800);
+            
+            const pp = document.getElementById('scoreEff'); 
+            pp.innerText="+"+pt; pp.style.display='block';
+            
             await sb.from('logs').insert([{employee_id:st.u.employee_id, question_id:st.curQ.id, point:pt}]);
             fetchD(); 
-            setTimeout(()=>loadQ(st.q.filter(q=>q.is_active!==false)),1000);
+            setTimeout(()=>{ pp.style.display='none'; loadQ(st.q.filter(q=>q.is_active!==false)); }, 1200);
         } else {
             btn.classList.add('incorrect');
             await sb.from('logs').insert([{employee_id:st.u.employee_id, question_id:st.curQ.id, point:0}]);
@@ -644,45 +772,20 @@
         }
     }
 
-    function fmt(n) { return n.toLocaleString(); } 
-
-    function nav(id) {
-        document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
+    function endQ(f) { 
+        clearInterval(quizInterval);
+        document.getElementById('panicOverlay').classList.remove('active');
+        if(f) alert("WRONG ANSWER!"); else alert("TIME'S UP!"); 
+        exitQuiz(); 
     }
-    function load(b) { document.getElementById('loading').style.display = b?'flex':'none'; }
+    function exitQuiz() { clearInterval(quizInterval); render(); nav('pgMain'); }
 
-    function shuffle(array) {
-        let currentIndex = array.length, randomIndex;
-        while (currentIndex != 0) {
-            randomIndex = Math.floor(Math.random() * currentIndex);
-            currentIndex--;
-            [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
-        }
-        return array;
-    }
-
-    // --- ANTI-CHEAT TIME SYNC ---
-    async function syncTime() {
-        try {
-            const { data, error } = await sb.rpc('get_server_time');
-            if(data) {
-                const serverTime = new Date(data).getTime();
-                st.timeOffset = serverTime - Date.now();
-            }
-        } catch(err) {
-            console.warn("Time sync failed.");
-        }
-    }
-
-    // --- SYSTEM: GAME SESSION & PEAK CHECKER ---
+    // --- INIT ---
     setInterval(checkGameStatus, 1000);
-    
     function checkGameStatus() {
         const now = new Date(Date.now() + st.timeOffset);
         const curMins = now.getHours() * 60 + now.getMinutes();
         const curSecs = now.getSeconds();
-        
         let activeSession = null;
         let nextSessionStart = 9999;
 
@@ -692,116 +795,40 @@
                 const [eh, em] = p.end_time.split(':').map(Number);
                 const startMins = sh * 60 + sm;
                 const endMins = eh * 60 + em;
-
                 if (startMins > endMins) {
                     if (curMins >= startMins || curMins < endMins) {
                         let endTimeTotal = endMins * 60;
                         if (curMins >= startMins) endTimeTotal += (24 * 60 * 60);
-                        activeSession = { ...p, endTotal: endTimeTotal };
-                        break;
+                        activeSession = { ...p, endTotal: endTimeTotal }; break;
                     }
                 } else {
                     if (curMins >= startMins && curMins < endMins) {
-                        activeSession = { ...p, endTotal: endMins * 60 };
-                        break;
+                        activeSession = { ...p, endTotal: endMins * 60 }; break;
                     }
                 }
-
-                if (startMins > curMins && startMins < nextSessionStart) {
-                    nextSessionStart = startMins;
-                }
+                if (startMins > curMins && startMins < nextSessionStart) nextSessionStart = startMins;
             }
         }
-
         updatePlayButton(activeSession, nextSessionStart, curMins * 60 + curSecs);
     }
 
-    function updatePlayButton(session, nextStartMins, curTotalSecs) {
-        const btn = document.getElementById('btnPlay');
-        const banner = document.getElementById('peakBanner');
-        const isQuizPage = document.getElementById('pgQuiz').classList.contains('active');
-
-        // 1. ACTIVE SESSION
-        if (session) {
-            st.canPlay = true;
-            st.isPeak = session.is_peak;
-            
-            let diff = session.endTotal - curTotalSecs;
-            if (diff < 0) diff += (24 * 60 * 60);
-
-            const h = Math.floor(diff / 3600);
-            const m = Math.floor((diff % 3600) / 60);
-            const s = diff % 60;
-            const timeTxt = `${h}:${m<10?'0'+m:m}:${s<10?'0'+s:s}`;
-
-            btn.classList.remove('state-locked');
-            btn.disabled = false;
-
-            if (st.isPeak) {
-                btn.className = 'btn-play peak-active';
-                btn.innerHTML = `<i class="fas fa-fire"></i> PLAY (x2) <span class="peak-info-pill">${timeTxt}</span>`;
-                
-                if(isQuizPage) {
-                    banner.style.display = 'block';
-                    document.getElementById('peakTimer').innerText = timeTxt;
-                }
-            } else {
-                btn.className = 'btn-play';
-                btn.innerHTML = `<i class="fas fa-gamepad"></i> PLAY <span class="peak-info-pill">${timeTxt}</span>`;
-                if(isQuizPage) banner.style.display = 'none';
-            }
-        } 
-        // 2. NO SESSION (LOCKED)
-        else {
-            st.canPlay = false;
-            st.isPeak = false;
-            
-            if (isQuizPage) {
-                alert("⏳ หมดเวลาเล่นแล้ว! (Session Ended)");
-                exitQuiz();
-                return;
-            }
-
-            btn.className = 'btn-play state-locked';
-            btn.disabled = true;
-
-            if (nextStartMins !== 9999) {
-                const diff = (nextStartMins * 60) - curTotalSecs;
-                const h = Math.floor(diff / 3600);
-                const m = Math.floor((diff % 3600) / 60);
-                const s = diff % 60;
-                const timeTxt = `${h}:${m<10?'0'+m:m}:${s<10?'0'+s:s}`;
-                btn.innerHTML = `<i class="fas fa-lock"></i> OPENS IN ${timeTxt}`;
-            } else {
-                btn.innerHTML = `<i class="fas fa-moon"></i> CLOSED`;
-            }
-        }
-    }
-
-    // --- MAIN APP ---
     async function doLogin(e) {
         e.preventDefault();
         const id = document.getElementById('lid').value.trim();
         if(!id) return;
-        
-        await syncTime(); // Sync
-
+        await syncTime();
         if(id === ADM_CODE) { st.u={type:'admin'}; await fetchD(); nav('pgAdmin'); return; }
-
         load(true);
         const { data } = await sb.from('employees').select('*').eq('employee_id', id).single();
         load(false);
-
         if(data) {
-            if(data.is_active === false) { alert('Disabled'); return; }
+            if(data.is_active === false) { alert('Access Denied'); return; }
             st.u = data;
             document.getElementById('uName').innerText = data.name.split(' ')[0];
             document.getElementById('uSite').innerText = data.site;
             document.getElementById('lbSite').innerText = `(${data.site})`;
             await fetchD(); render(); nav('pgMain');
-        } else {
-            document.getElementById('lErr').innerText = "User Not Found";
-        }
+        } else { document.getElementById('lErr').innerText = "INVALID ID"; }
     }
     function doLogout() { st.u=null; document.getElementById('lid').value=''; nav('pgLogin'); }
 
@@ -813,322 +840,59 @@
                 sb.from('logs').select('*'),
                 sb.from('peak_times').select('*')
             ]);
-            st.e = e.data||[]; st.q = (q.data&&q.data.length)?q.data:MOCK; 
+            st.e = e.data||[]; st.q = (q.data&&q.data.length)?q.data:[]; 
             st.l = l.data||[]; st.p = p.data||[];
             if(st.u?.type==='admin') renderAdmin();
         } catch(x) { console.log(x); }
     }
 
-    function render() {
-        const users = st.e.filter(u => u.is_active!==false).map(u => {
-            const p = st.l.filter(l => l.employee_id === u.employee_id).reduce((a,b)=>a+(b.point||0),0);
-            return { ...u, pts: p, cleanSite: u.site.trim().toUpperCase() };
-        }).sort((a,b)=>b.pts-a.pts);
-
-        // Update My Stats Card
-        const myIdx = users.findIndex(u => u.employee_id === st.u.employee_id);
-        if (myIdx !== -1) {
-            document.getElementById('myRankVal').innerText = "#" + (myIdx + 1);
-            document.getElementById('myScoreVal').innerText = fmt(users[myIdx].pts);
-        } else {
-            document.getElementById('myRankVal').innerText = "-";
-            document.getElementById('myScoreVal').innerText = "0";
-        }
-
-        const sSum = { 'HO':0, 'PPD':0, 'NKL':0 };
-        users.forEach(u => { if(sSum[u.cleanSite] !== undefined) sSum[u.cleanSite] += u.pts; });
-
-        const sortedSites = Object.entries(sSum).map(([k, v]) => {
-            const r = RATES[k]||100;
-            const g = Math.floor(v/r);
-            return { site: k, great: g, raw: v };
-        }).sort((a, b) => b.great - a.great);
-
-        let h = '';
-        sortedSites.forEach(item => {
-            const k = item.site;
-            const g = item.great;
-            const act = k===st.u.site.trim().toUpperCase() ? 'active' : '';
-            const displayVal = g > 0 ? fmt(g) : '0';
-            // Adjusted HTML structure for new CSS
-            h += `<div class="site-box ${act}"><div class="sb-lbl">${k}</div><div class="sb-val">${displayVal}</div></div>`;
-        });
-        document.getElementById('siteArea').innerHTML = h;
-
-        const actU = users.filter(u=>u.pts>0);
-        const t3 = actU.slice(0,3);
-        if(t3.length) {
-            let ph = '';
-            if(t3[1]) ph += pCol(t3[1],2); else ph += '<div class="p-col"></div>';
-            if(t3[0]) ph += pCol(t3[0],1);
-            if(t3[2]) ph += pCol(t3[2],3); else ph += '<div class="p-col"></div>';
-            document.getElementById('podArea').innerHTML = ph;
-        } else {
-            document.getElementById('podArea').innerHTML = '<div style="text-align:center; color:#ccc; width:100%;">No Data</div>';
-        }
-
-        const myS = users.filter(u => u.cleanSite === st.u.site.trim().toUpperCase() && u.pts>0).slice(0,10);
-        document.getElementById('rankArea').innerHTML = myS.map((u,i) => `
-            <div class="list-row">
-                <div class="rk-left">
-                    <div class="rk-idx">${i+1}</div>
-                    <div style="font-weight:600;">${u.name}</div>
-                </div>
-                <div class="rk-pts">${fmt(u.pts)}</div>
-            </div>
-        `).join('') || '<div style="text-align:center; color:#ccc; padding:20px;">No Players</div>';
-    }
-
-    function pCol(u,r) {
-        // Adjusted for new structure
-        return `<div class="p-col r${r}">
-                    <div class="p-avatar">${r}</div>
-                    <div class="p-info">
-                        <div class="p-name">${u.name}</div>
-                        <div class="p-pts">${fmt(u.pts)}</div>
-                    </div>
-                    <div class="p-bar"></div>
-                </div>`;
-    }
-
-    function startQuiz() {
-        if(!st.canPlay) { alert('Game is currently closed.'); return; }
-        const vq = st.q.filter(q=>q.is_active!==false);
-        if(!vq.length) { alert('No Q'); return; }
-        st.s=0; nav('pgQuiz'); loadQ(vq);
-    }
-
-    function loadQ(lst) {
-        const tBar = document.getElementById('tBar');
-        const panic = document.getElementById('panicOverlay');
-        const countBox = document.getElementById('bigCountdown');
-
-        // Reset UI
-        tBar.style.width = '100%';
-        tBar.style.background = '#2563eb'; // Reset to Primary
-        panic.classList.remove('active');
-        countBox.classList.remove('urgent');
-        countBox.innerText = "8.0";
-
-        // Clear old interval
-        clearInterval(quizInterval);
-
-        document.getElementById('streak').innerText = st.s;
-        
-        // Logic No Repeat
-        let available = lst;
-        if (lst.length > 1 && st.lastId) {
-            available = lst.filter(q => q.id !== st.lastId);
-        }
-        
-        st.curQ = available[Math.floor(Math.random()*available.length)];
-        st.lastId = st.curQ.id; 
-
-        const basePt = Math.min((st.s+1)*10, 50);
-        const finalPt = st.isPeak ? basePt * 2 : basePt;
-
-        // Use grid for buttons
-        document.getElementById('qArea').innerHTML = `
-            <div style="text-align:center;">
-                <div class="q-txt">${st.curQ.question}</div>
-                <div style="color:var(--primary); font-weight:bold; margin-bottom:20px; font-size:14px;">WIN: +${finalPt} ${st.isPeak?'(x2)':''}</div>
-            </div>
-            <div class="choice-grid">
-                ${shuffle([1,2,3,4]).map(i => `<button class="choice-btn" onclick="ans('${i}',this)">${st.curQ['option_'+i]}</button>`).join('')}
-            </div>
-        `;
-
-        // START TIMER (JS Controlled for precision)
-        let timeLeft = 8.0;
-        const totalTime = 8.0;
-
-        quizInterval = setInterval(() => {
-            timeLeft -= 0.1;
-            
-            // Update Bar
-            const pct = (timeLeft / totalTime) * 100;
-            tBar.style.width = pct + '%';
-            
-            // Update Text
-            countBox.innerText = Math.max(0, timeLeft).toFixed(1);
-
-            // Phase Colors
-            if(timeLeft < 5.0 && timeLeft > 3.0) {
-                tBar.style.background = '#f59e0b'; // Yellow
-            } else if(timeLeft <= 3.0) {
-                tBar.style.background = '#ef4444'; // Red
-                panic.classList.add('active'); // Pulse Screen
-                countBox.classList.add('urgent'); // Big Red Text
-            }
-
-            if(timeLeft <= 0) {
-                clearInterval(quizInterval);
-                endQ(false);
-            }
-        }, 100);
-    }
-
-    async function ans(v,btn) {
-        clearInterval(quizInterval); // Stop timer
-        document.getElementById('panicOverlay').classList.remove('active'); // Stop pulsing
-
-        document.querySelectorAll('.choice-btn').forEach(b=>b.disabled=true);
-        
-        if(v===st.curQ.answer) {
-            btn.classList.add('correct');
-            
-            const basePt = Math.min((st.s+1)*10, 50);
-            const pt = st.isPeak ? basePt * 2 : basePt;
-            
-            st.s++;
-            const pp = document.getElementById('scoreEff'); pp.innerText="+"+pt; pp.style.display='block';
-            setTimeout(()=>pp.style.display='none',800);
-            await sb.from('logs').insert([{employee_id:st.u.employee_id, question_id:st.curQ.id, point:pt}]);
-            fetchD(); setTimeout(()=>loadQ(st.q.filter(q=>q.is_active!==false)),1000);
-        } else {
-            btn.classList.add('incorrect');
-            await sb.from('logs').insert([{employee_id:st.u.employee_id, question_id:st.curQ.id, point:0}]);
-            setTimeout(()=>endQ(true),1000);
-        }
-    }
-    function endQ(f) { 
-        clearInterval(quizInterval);
-        document.getElementById('panicOverlay').classList.remove('active');
-        alert(f?"Wrong!":"Time Up!"); 
-        exitQuiz(); 
-    }
-    function exitQuiz() { clearInterval(quizInterval); render(); nav('pgMain'); }
-
-    // --- ADMIN & MODAL ---
+    // --- ADMIN ---
     function setTab(t){ st.tab=t; renderAdmin(); }
     function renderAdmin() {
         const d = document.getElementById('admTbl');
         const s = document.getElementById('admS').value.toLowerCase();
-        let h = `<table class="adm-tbl"><thead><tr>`;
-        
+        let h = `<table class="adm-tbl" style="width:100%; border-collapse:collapse; color:white;"><thead><tr style="background:#334155;">`;
         if(st.tab==='peak') {
             h+=`<th>Start</th><th>End</th><th>Mode</th><th>Act</th></tr></thead><tbody>`;
             st.p.forEach(p => {
-                const mode = p.is_peak ? '🔥 PEAK' : '🟢 NORMAL';
-                h+=`<tr><td>${p.start_time}</td><td>${p.end_time}</td><td>${mode}</td><td><button class="btn-sm bg-red" onclick="window.delPeak(${p.id})">Del</button></td></tr>`;
+                h+=`<tr><td style="padding:10px; border-bottom:1px solid #334155;">${p.start_time}</td><td>${p.end_time}</td><td>${p.is_peak?'🔥':'🟢'}</td><td><button class="btn-sm bg-red" onclick="window.delPeak(${p.id})">Del</button></td></tr>`;
             });
         }
         else if(st.tab==='emp') {
             h+=`<th>ID</th><th>Name</th><th>Site</th><th>Sts</th></tr></thead><tbody>`;
             st.e.filter(e=>e.name.toLowerCase().includes(s)).forEach(e=>{
-                const siteSel = `<select style="padding:5px;" onchange="up('employees',${e.id},'site',this.value)">
-                    <option ${e.site==='HO'?'selected':''}>HO</option>
-                    <option ${e.site==='PPD'?'selected':''}>PPD</option>
-                    <option ${e.site==='NKL'?'selected':''}>NKL</option>
-                </select>`;
-                h+=`<tr><td>${e.employee_id}</td><td contenteditable onblur="up('employees',${e.id},'name',this.innerText)">${e.name}</td><td>${siteSel}</td><td onclick="tg('employees',${e.id},${e.is_active})">${e.is_active!==false?'🟢':'🔴'}</td></tr>`;
+                 h+=`<tr><td style="padding:10px; border-bottom:1px solid #334155;">${e.employee_id}</td><td>${e.name}</td><td>${e.site}</td><td onclick="tg('employees',${e.id},${e.is_active})">${e.is_active!==false?'🟢':'🔴'}</td></tr>`;
             });
         } else {
-            h+=`<th>Q</th><th>Op1</th><th>Op2</th><th>Op3</th><th>Op4</th><th>Ans</th><th>Sts</th></tr></thead><tbody>`;
-            st.q.filter(q=>q.question.toLowerCase().includes(s)).forEach(q=>{
-                const ansSel = `<select style="padding:5px;" onchange="up('questions',${q.id},'answer',this.value)">
-                    <option value="1" ${q.answer==='1'?'selected':''}>1</option>
-                    <option value="2" ${q.answer==='2'?'selected':''}>2</option>
-                    <option value="3" ${q.answer==='3'?'selected':''}>3</option>
-                    <option value="4" ${q.answer==='4'?'selected':''}>4</option>
-                </select>`;
-                h+=`<tr>
-                <td contenteditable onblur="up('questions',${q.id},'question',this.innerText)">${q.question}</td>
-                <td contenteditable onblur="up('questions',${q.id},'option_1',this.innerText)">${q.option_1}</td>
-                <td contenteditable onblur="up('questions',${q.id},'option_2',this.innerText)">${q.option_2}</td>
-                <td contenteditable onblur="up('questions',${q.id},'option_3',this.innerText)">${q.option_3}</td>
-                <td contenteditable onblur="up('questions',${q.id},'option_4',this.innerText)">${q.option_4}</td>
-                <td>${ansSel}</td>
-                <td onclick="tg('questions',${q.id},${q.is_active})">${q.is_active!==false?'🟢':'🔴'}</td></tr>`;
-            });
+             h+=`<th>Q</th><th>Ans</th><th>Sts</th></tr></thead><tbody>`;
+             st.q.filter(q=>q.question.toLowerCase().includes(s)).forEach(q=>{
+                h+=`<tr><td style="padding:10px; border-bottom:1px solid #334155;">${q.question}</td><td>${q.answer}</td><td onclick="tg('questions',${q.id},${q.is_active})">${q.is_active!==false?'🟢':'🔴'}</td></tr>`;
+             });
         }
         d.innerHTML = h+`</tbody></table>`;
     }
-
-    function openAddModal() {
-        document.getElementById('addModal').style.display = 'flex';
+    
+    function openAddModal() { document.getElementById('addModal').style.display = 'flex'; openAddModalContent(); }
+    function openAddModalContent() {
         const content = document.getElementById('modalContent');
-        const title = document.getElementById('modalTitle');
-        
         if(st.tab === 'peak') {
-            title.innerText = 'Add Peak Time';
-            content.innerHTML = `
-                <div style="margin-bottom:15px;">Start Time <input type="time" id="mStart" class="inp-modern" style="margin:0; padding:10px; text-align:left;"></div>
-                <div style="margin-bottom:15px;">End Time <input type="time" id="mEnd" class="inp-modern" style="margin:0; padding:10px; text-align:left;"></div>
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <input type="checkbox" id="mIsPeak" style="transform:scale(1.5);">
-                    <span style="color:#ef4444; font-weight:bold;">Is Peak Time (x2 Points)?</span>
-                </div>
-            `;
+             content.innerHTML = `<input type="time" id="mStart" class="inp-modern"><input type="time" id="mEnd" class="inp-modern"><div style="color:white;"><input type="checkbox" id="mIsPeak"> Peak (x2)</div>`;
         } else if(st.tab === 'emp') {
-            title.innerText = 'Add New Employee';
-            content.innerHTML = `
-                <input id="mID" class="inp-modern" placeholder="ID (e.g. EMP001)" style="margin-bottom:10px; font-size:16px;">
-                <input id="mName" class="inp-modern" placeholder="Full Name" style="margin-bottom:10px; font-size:16px;">
-                <select id="mSite" class="inp-modern" style="margin-bottom:0; font-size:16px;"><option>HO</option><option>PPD</option><option>NKL</option></select>
-            `;
+             content.innerHTML = `<input id="mID" class="inp-modern" placeholder="ID"><input id="mName" class="inp-modern" placeholder="Name"><select id="mSite" class="inp-modern"><option>HO</option><option>PPD</option><option>NKL</option></select>`;
         } else {
-            title.innerText = 'Add New Question';
-            content.innerHTML = `
-                <input id="mQ" class="inp-modern" placeholder="Question" style="margin-bottom:10px; font-size:14px; text-align:left;">
-                <input id="mO1" class="inp-modern" placeholder="Option 1" style="margin-bottom:5px; font-size:14px; text-align:left; padding:10px;">
-                <input id="mO2" class="inp-modern" placeholder="Option 2" style="margin-bottom:5px; font-size:14px; text-align:left; padding:10px;">
-                <input id="mO3" class="inp-modern" placeholder="Option 3" style="margin-bottom:5px; font-size:14px; text-align:left; padding:10px;">
-                <input id="mO4" class="inp-modern" placeholder="Option 4" style="margin-bottom:10px; font-size:14px; text-align:left; padding:10px;">
-                <select id="mAns" class="inp-modern" style="margin-bottom:0; font-size:14px; text-align:left; padding:10px;"><option value="1">Answer: 1</option><option value="2">Answer: 2</option><option value="3">Answer: 3</option><option value="4">Answer: 4</option></select>
-            `;
+             content.innerHTML = `<input id="mQ" class="inp-modern" placeholder="Question"><input id="mO1" class="inp-modern" placeholder="Op1"><input id="mO2" class="inp-modern" placeholder="Op2"><input id="mO3" class="inp-modern" placeholder="Op3"><input id="mO4" class="inp-modern" placeholder="Op4"><select id="mAns" class="inp-modern"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select>`;
         }
     }
-
     function closeModal() { document.getElementById('addModal').style.display = 'none'; }
-
     async function saveData() {
         load(true);
-        if(st.tab === 'peak') {
-            const s = document.getElementById('mStart').value;
-            const e = document.getElementById('mEnd').value;
-            const p = document.getElementById('mIsPeak').checked;
-            if(s && e) await sb.from('peak_times').insert([{start_time:s, end_time:e, is_peak:p}]);
-        }
-        else if(st.tab === 'emp') {
-            const id = document.getElementById('mID').value;
-            const name = document.getElementById('mName').value;
-            const site = document.getElementById('mSite').value;
-            if(id && name) await sb.from('employees').insert([{employee_id:id, name:name, site:site}]);
-        } else {
-            const q = document.getElementById('mQ').value;
-            const o1 = document.getElementById('mO1').value;
-            const o2 = document.getElementById('mO2').value;
-            const o3 = document.getElementById('mO3').value;
-            const o4 = document.getElementById('mO4').value;
-            const ans = document.getElementById('mAns').value;
-            if(q) await sb.from('questions').insert([{question:q, option_1:o1, option_2:o2, option_3:o3, option_4:o4, answer:ans}]);
-        }
-        await fetchD();
-        renderAdmin();
-        load(false);
-        closeModal();
+        if(st.tab === 'peak') { await sb.from('peak_times').insert([{start_time:document.getElementById('mStart').value, end_time:document.getElementById('mEnd').value, is_peak:document.getElementById('mIsPeak').checked}]); }
+        else if(st.tab === 'emp') { await sb.from('employees').insert([{employee_id:document.getElementById('mID').value, name:document.getElementById('mName').value, site:document.getElementById('mSite').value}]); }
+        else { await sb.from('questions').insert([{question:document.getElementById('mQ').value, option_1:document.getElementById('mO1').value, option_2:document.getElementById('mO2').value, option_3:document.getElementById('mO3').value, option_4:document.getElementById('mO4').value, answer:document.getElementById('mAns').value}]); }
+        await fetchD(); renderAdmin(); load(false); closeModal();
     }
-
-    // EXPOSED DELETE FUNCTION
-    window.delPeak = async function(id) {
-        if(!confirm('Delete this time slot?')) return;
-        load(true);
-        try {
-            const { error } = await sb.from('peak_times').delete().eq('id', id);
-            if(error) {
-                alert('Error: ' + error.message + '\n(Check DB Policy)');
-            } else {
-                await fetchD();
-                renderAdmin();
-            }
-        } catch(e) { alert('Error: '+e.message); }
-        load(false);
-    };
-
-    async function up(t,id,c,v) { await sb.from(t).update({[c]:v}).eq('id',id); }
+    window.delPeak = async function(id) { if(confirm('Del?')) { await sb.from('peak_times').delete().eq('id',id); fetchD().then(renderAdmin); } };
     async function tg(t,id,s) { await sb.from(t).update({is_active:!s}).eq('id',id); fetchD().then(renderAdmin); }
-
   </script>
  </body>
 </html>
